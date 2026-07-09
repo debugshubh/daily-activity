@@ -1,0 +1,40 @@
+name: Daily Auto Commit
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'   # checks in every 3 hours
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  auto-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Randomly decide whether to commit
+        id: decide
+        run: |
+          if [ $((RANDOM % 100)) -lt 35 ]; then
+            echo "should_commit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_commit=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Log activity
+        if: steps.decide.outputs.should_commit == 'true'
+        run: |
+          mkdir -p .activity
+          echo "$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> .activity/log.txt
+
+      - name: Commit and push
+        if: steps.decide.outputs.should_commit == 'true'
+        run: |
+          git config user.name "debugshubh"
+          git config user.email "debugshubh@gmail.com"
+          git add -A
+          git commit -m "Update activity log $(date -u +'%Y-%m-%d %H:%M')"
+          git push
